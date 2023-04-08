@@ -1,0 +1,11 @@
+{
+  "name": "node-address-screen",
+  "version": "0.0.1",
+  "main": "screen-addresses.js",
+  "dependencies": {
+    "dotenv": "*"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
