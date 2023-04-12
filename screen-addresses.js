@@ -4,23 +4,32 @@
 //
 // Usage:  node screen-addresses.js [input-file] [output-file]
 //
-// Set environment variable $IAPI_KEY or use .env file
+// Set environment variable $API_KEY or use .env file
 // 
 // Input file format:  
 //   no header row, 
-//   asset, address
-// e.g. ETH, 0x00Bb9221DaAAF8A703FA19f8CE4822FE8c1B87Eb
+//   address
+// e.g. 0x00Bb9221DaAAF8A703FA19f8CE4822FE8c1B87Eb
 
 const fs = require('fs');
-// const { getSystemErrorMap } = require('util');
-// const { resolve } = require('path');
 require('util');
 require('path');
+const fetch = require('node-fetch');
 require('dotenv').config();
 
 // globals
 const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
+const sleepTime = 1
+
+const header_fields = [
+  "address", 
+  "screenStatus",
+  "risk",
+  "riskReason",
+  "category",
+  "name" 
+  ]
 
 const categories = [
   "mining pool",
@@ -56,12 +65,11 @@ const categories = [
   "infrastructure as a service"
 ]
 
-const header_fields = ["address"]
-const csv_header = header_fields.join() + categories.join()
+const csv_header = header_fields.concat(categories).join()
 
 async function start(args) {
   if (args.length != 4) {
-    console.error("\nUsage:\n  node address-info.js [input-file] [output-file]\n");
+    console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n");
     process.exit(1);
   }
 
@@ -70,7 +78,7 @@ async function start(args) {
 
   try {
     // Create output file 
-    fs.writeFile(output, categories.join() + '\n', function (err) {
+    fs.writeFile(output, csv_header + '\n', function (err) {
       if (err) throw err;
       console.log(`Output file ${output} created successfully.`);
     });
@@ -86,7 +94,7 @@ async function start(args) {
       await new Promise(r => setTimeout(r, sleepTime)); // keep IAPI rate limiter at bay
       currentBatch++
     }
-    } catch (err) {
+  } catch (err) {
     console.error(err);
   }
 }
@@ -110,8 +118,16 @@ async function processBatch(batch, output) {
     let final_results = results.map((result) => {
       let row = []
       row.push(result.address)
+      row.push(result.screenStatus)
       row.push(result.risk)
+      row.push(result.riskReason)
       row.push(result.cluster?.category)
+      row.push(result.cluster?.name)
+      for (cat of categories) {
+        usd_exposure = result.exposures?.find(exposure => (exposure.category == cat))?.value
+        row.push(usd_exposure)
+      }
+
       return row.join() // Turn it into a string
     })
 
@@ -123,38 +139,34 @@ async function processBatch(batch, output) {
   });
 }
 
-// TODO:  This needs to return a promise 
 async function check_exposure(record) {
   let row = record.split(',');
-  let address = row[0];
+  let address = row[0]; 
+  let body = JSON.stringify({ address })
+  let address_info = {}
 
-  fetch(host + "/api/risk/v2/entities", {
-    method: "POST",
-    headers: headers,
-    body: JSON.stringify({ address })
-  })
-  
-  .then((response)=> {
-    if (!response.ok) throw new Error(response.status + '' + response.statusText)
+  try {
+    // Register address
+    let post = await fetch(host + "/api/risk/v2/entities", {method: "POST", headers: headers, body: body})
+    if (!post.ok) throw new Error(response.status + '' + response.statusText)
 
-    fetch(host + "/api/risk/v2/entities/" + address, {headers: headers})
-    .then((response) => {
-      if (!response.ok) throw new Error(response.status + '' + response.statusText)
-      response.json().then(result => {
-        //console.log(JSON.stringify(result))
-        return result
-      })
-    })
-  })
+    // Retrieve info
+    let get = await fetch(host + "/api/risk/v2/entities/" + address, {headers: headers})
+    if (!get.ok) throw new Error(response.status + '' + response.statusText)
+    
+    address_info = await get.json()
+    address_info.address = address
+    address_info.screenStatus = 'complete'
+  }
+  catch (e) {
+    // Populate minimal object with error message
+    address_info.address = address
+    address_info.screenStatus = e.message
+  }
+  finally {
+    return address_info
+  }
 
-
-
-  .catch(error => {
-      console.log(error);
-      return final;
-  });
 }
-
-
 
 start(process.argv);

@@ -1,11 +1,16 @@
 {
   "name": "node-address-screen",
+  "description": "Receives a CSV of cryptocurrency addresses and performs parallelized screening via Chainalysis Address Screening API",
   "version": "0.0.1",
   "main": "screen-addresses.js",
   "dependencies": {
-    "dotenv": "*"
+    "dotenv": "*",
+    "node-fetch": "^2.6.9"
   },
+  "author": "Hamish Eisler",
   "engines": {
-    "node": ">=18"
-  }
+    "node": ">=14"
+  },
+  "license":"0BSD",
+  "private": true
 }
