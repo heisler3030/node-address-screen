@@ -12,6 +12,7 @@
 // e.g. 0x00Bb9221DaAAF8A703FA19f8CE4822FE8c1B87Eb
 
 const fs = require('fs');
+const { request } = require('https');
 require('util');
 require('path');
 const fetch = require('node-fetch');
@@ -20,7 +21,7 @@ require('dotenv').config();
 // globals
 const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
-const sleepTime = 1
+const rateLimit = 4000 // max number of API requests / minute
 
 const header_fields = [
   "address", 
@@ -75,6 +76,7 @@ async function start(args) {
 
   let input = args[2];
   let output = args[3];
+  let startTime = Date.now()
 
   try {
     // Create output file 
@@ -87,13 +89,23 @@ async function start(args) {
     data = data.split(/\r\n|\r|\n/g)  // Regex to catch annoying CSV linefeed variations
     let batches = splitIntoBatches(data, 100);
     let currentBatch = 1
+    
+    // For rate limiting
+    let requestsPerBatch = 200 // two requests per batch of 100
+    let batchesPerMin = Math.floor(rateLimit/requestsPerBatch)
+    let batchTimes = new Array(batchesPerMin).fill(0) // Prefill array with 0 timestamps
 
     for(let batch of batches) {
       console.log(`Processing batch ${currentBatch} of ${batches.length}...`)
-      await processBatch(batch, output);
-      await new Promise(r => setTimeout(r, sleepTime)); // keep IAPI rate limiter at bay
+      batchTimes = setBatchTime(batchTimes, Date.now(), batchesPerMin) // For rate limiting
+      await processBatch(batch, output)
+      await checkRateLimit(batchTimes)  // For rate limiting
       currentBatch++
     }
+    let finishTime = Date.now()
+    let duration = Math.floor((finishTime - startTime) / 100) / 10
+    console.log(`Completed in ${duration} seconds.`)
+
   } catch (err) {
     console.error(err);
   }
@@ -167,6 +179,24 @@ async function check_exposure(record) {
     return address_info
   }
 
+}
+
+//// Utility Functions ////
+
+async function checkRateLimit(batches) {
+  // Checks to see if the previous batches are under the rate limit
+  let timeSinceBatch = Date.now() - batches[batches.length-1] // time of the oldest batch
+  if (timeSinceBatch < 60000) {
+    let sleepTime = 61000 - timeSinceBatch
+    console.log(`Sleeping for ${sleepTime} ms to manage rate limit`)
+    await new Promise(r => setTimeout(r, sleepTime))
+  }
+}
+
+function setBatchTime (array, item, length) {
+  // Adds to a fixed length array of size 'length' which will always have the oldest item at the end
+  array.unshift(item) > length ?  array.pop() : null
+  return array
 }
 
 start(process.argv);
