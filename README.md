@@ -1,5 +1,5 @@
 # Node-Address-Screen
-A command-line utility for bulk screening cryptocurrency addresses using the [Chainalysis Address Screening API][https://docs.chainalysis.com/api/address-screening/].
+A command-line utility for bulk screening cryptocurrency addresses using the [Chainalysis Address Screening API](https://docs.chainalysis.com/api/address-screening/).
 
 Accepts a flat-file list of addresses and generates a CSV output file.
 
@@ -9,6 +9,11 @@ Returns attribution and risk rating based on your configured risk rules.  Additi
 ```
 node screen-addresses.js [input-file] [output-file]
 ```
+
+```
+node screen-addresses.js example-btc-addresses-250.csv output.csv
+```
+
 
 # Installation
 
