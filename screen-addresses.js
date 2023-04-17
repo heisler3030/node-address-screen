@@ -74,6 +74,11 @@ async function start(args) {
     process.exit(1);
   }
 
+  if (!process.env.API_KEY) {
+    console.error("\nPlease set $API_KEY environment variable or add to .env file.\n");
+    process.exit(1);
+  }
+
   let input = args[2];
   let output = args[3];
   let startTime = Date.now()
