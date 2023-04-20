@@ -22,6 +22,7 @@ require('dotenv').config();
 const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
 const rateLimit = 4000 // max number of API requests / minute
+const parallelism = 500 // number of simultaneous address screens in each batch
 
 const header_fields = [
   "address", 
@@ -92,11 +93,11 @@ async function start(args) {
 
     let data = fs.readFileSync(input, 'utf8');
     data = data.split(/\r\n|\r|\n/g)  // Regex to catch annoying CSV linefeed variations
-    let batches = splitIntoBatches(data, 100);
+    let batches = splitIntoBatches(data, parallelism);
     let currentBatch = 1
     
     // For rate limiting
-    let requestsPerBatch = 200 // two requests per batch of 100
+    let requestsPerBatch = (2 * parallelism) // two requests per address
     let batchesPerMin = Math.floor(rateLimit/requestsPerBatch)
     let batchTimes = new Array(batchesPerMin).fill(0) // Prefill array with 0 timestamps
 
@@ -178,6 +179,7 @@ async function check_exposure(record) {
   catch (e) {
     // Populate minimal object with error message
     address_info.address = address
+    console.log(`Error screening ${address}:  ${e.message}`)
     address_info.screenStatus = e.message
   }
   finally {
