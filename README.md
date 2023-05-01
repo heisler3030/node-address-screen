@@ -11,7 +11,7 @@ node screen-addresses.js [input-file] [output-file]
 ```
 
 ```
-node screen-addresses.js example-btc-addresses-250.csv output.csv
+node screen-addresses.js example-btc-addresses-250.csv example-output.csv
 ```
 
 
@@ -21,3 +21,7 @@ node screen-addresses.js example-btc-addresses-250.csv output.csv
 * `git clone` the repository to your local environment
 * run `npm install` in the app directory
 * create a `.env` file and set `API_KEY=<your Chainalysis API key>`
+
+# Troubleshooting
+
+* Lower the parallelism variable if you are getting timeouts (slower connections)
