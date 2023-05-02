@@ -33,43 +33,6 @@ const header_fields = [
   "name" 
   ]
 
-const categories = [
-  "mining pool",
-  "fraud shop",
-  "high risk jurisdiction",
-  "decentralized exchange contract",
-  "erc20 token",
-  "exchange",
-  "lending contract",
-  "mixing",
-  "protocol privacy",
-  "child abuse material",
-  "stolen funds",
-  "p2p exchange",
-  "smart contract",
-  "terrorist financing",
-  "darknet market",
-  "mining",
-  "atm",
-  "scam",
-  "special measures",
-  "token smart contract",
-  "unnamed service",
-  "hosted wallet",
-  "ico",
-  "high risk exchange",
-  "merchant services",
-  "online pharmacy",
-  "illicit actor-org",
-  "ransomware",
-  "gambling",
-  "other",
-  "sanctions",
-  "infrastructure as a service"
-]
-
-const csv_header = header_fields.concat(categories).join()
-
 async function start(args) {
   if (args.length != 4) {
     console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n");
@@ -84,6 +47,9 @@ async function start(args) {
   let input = args[2];
   let output = args[3];
   let startTime = Date.now()
+
+  let categories = await fetchCategories()
+  const csv_header = header_fields.concat(categories).join()
 
   try {
     // Create output file 
@@ -180,7 +146,7 @@ async function check_exposure(record) {
   catch (e) {
     // Populate minimal object with error message
     address_info.address = address
-    console.log(`Error screening ${address}:  ${e.message}`)
+    console.error(`Error screening ${address}:  ${e.message}`)
     address_info.screenStatus = e.message
   }
   finally {
@@ -190,6 +156,21 @@ async function check_exposure(record) {
 }
 
 //// Utility Functions ////
+
+async function fetchCategories() {
+  console.log("Retrieving Chainalysis Categories...")
+  try {
+    let get = await fetch("https://reactor.chainalysis.com/api/v2/categories", {headers: headers})
+    if (!get.ok) throw new Error(response.status + '' + response.statusText)
+    
+    categories = await get.json()
+    return categories.sort()
+  }
+  catch (e) {
+    throw Error(`Error getting categories:  ${e.message}`)
+  }
+}
+
 
 async function checkRateLimit(batches) {
   // Checks to see if the previous batches are under the rate limit
