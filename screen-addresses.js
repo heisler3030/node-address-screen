@@ -63,16 +63,16 @@ async function start(args) {
     let batches = splitIntoBatches(data, parallelism);
     let currentBatch = 1
     
-    // For rate limiting
+    // For rate limiting - see checkRateLimit function
     let requestsPerBatch = (2 * parallelism) // two requests per address
     let batchesPerMin = Math.floor(rateLimit/requestsPerBatch)
-    let batchTimes = new Array(batchesPerMin).fill(0) // Prefill array with 0 timestamps
+    let batchTimes = new Array(batchesPerMin).fill(0) // Initialize rate limit array
 
     for(let batch of batches) {
       console.log(`Processing batch ${currentBatch} of ${batches.length}...`)
-      batchTimes = setBatchTime(batchTimes, Date.now(), batchesPerMin) // For rate limiting
+      batchTimes = setBatchTime(batchTimes, Date.now(), batchesPerMin) // Record start time for rate limiter
       await processBatch(batch, output)
-      await checkRateLimit(batchTimes)  // For rate limiting
+      await checkRateLimit(batchTimes)
       currentBatch++
     }
     let finishTime = Date.now()
@@ -174,6 +174,12 @@ async function fetchCategories() {
 
 async function checkRateLimit(batches) {
   // Checks to see if the previous batches are under the rate limit
+  // Logic:  
+  //   - Every time a batch is launched the start time is pushed into an array (setBatchTime)
+  //   - The array is sized equal to the max batches per minute
+  //   - The last entry in the array is the oldest batch
+  //   - If the oldest batch is newer than 1 min old then the sleep time is calculated
+  //     to prevent overage
   let timeSinceBatch = Date.now() - batches[batches.length-1] // time of the oldest batch
   if (timeSinceBatch < 60000) {
     let sleepTime = 61000 - timeSinceBatch
