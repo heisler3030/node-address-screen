@@ -133,11 +133,11 @@ async function check_exposure(record) {
   try {
     // Register address
     let post = await fetch(host + "/api/risk/v2/entities", {method: "POST", headers: headers, body: body})
-    if (!post.ok) throw new Error(response.status + '' + response.statusText)
+    if (!post.ok) throw new Error(post.status + ' ' + post.statusText)
 
     // Retrieve info
     let get = await fetch(host + "/api/risk/v2/entities/" + address, {headers: headers})
-    if (!get.ok) throw new Error(response.status + '' + response.statusText)
+    if (!get.ok) throw new Error(get.status + ' ' + get.statusText)
     
     address_info = await get.json()
     address_info.address = address
@@ -161,7 +161,7 @@ async function fetchCategories() {
   console.log("Retrieving Chainalysis Categories...")
   try {
     let get = await fetch("https://reactor.chainalysis.com/api/v2/categories", {headers: headers})
-    if (!get.ok) throw new Error(response.status + '' + response.statusText)
+    if (!get.ok) throw new Error(get.status + ' ' + get.statusText)
     
     categories = await get.json()
     return categories.sort()
