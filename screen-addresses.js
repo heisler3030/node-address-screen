@@ -2,8 +2,9 @@
 //
 // Takes an input list of addresses and summarizes risky exposure
 //
-// Usage:  node screen-addresses.js [input-file] [output-file]
+// Usage:  node screen-addresses.js [input-file] [output-file] -i
 //
+// -i:  Include indirect exposure in the output
 // Set environment variable $API_KEY or use .env file
 // 
 // Input file format:  
@@ -23,6 +24,9 @@ const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
 const rateLimit = 4000 // max number of API requests / minute
 const parallelism = 50 // number of simultaneous address screens in each batch
+const DIRECT = 'direct' // API label for direct exposure
+const INDIRECT = 'indirect' // API label for indirect exposure
+const include_indirect = true // include indirect exposure  TODO:  make this a command line option
 
 const header_fields = [
   "address", 
@@ -35,7 +39,7 @@ const header_fields = [
 
 async function start(args) {
   if (args.length != 4) {
-    console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n");
+    console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n\n  -i:  Include indirect exposure in the output\n");
     process.exit(1);
   }
 
@@ -49,7 +53,10 @@ async function start(args) {
   let startTime = Date.now()
 
   let categories = await fetchCategories()
-  const csv_header = header_fields.concat(categories).join()
+  let csv_header = header_fields.concat(categories).join()
+  if (include_indirect) {
+    csv_header = header_fields.concat((categories).map(c => `${c}_direct,${c}_indirect`)).join();
+  }
 
   try {
     // Create output file 
@@ -110,8 +117,15 @@ async function processBatch(batch, output) {
       row.push(result.cluster?.category)
       row.push(result.cluster?.name)
       for (cat of categories) {
-        usd_exposure = result.exposures?.find(exposure => (exposure.category == cat))?.value
-        row.push(usd_exposure)
+        if (include_indirect) {
+          let usd_direct = result.exposures?.find(exposure => (exposure.category == cat && exposure.exposureType == DIRECT))?.value
+          let usd_indirect = result.exposures?.find(exposure => (exposure.category == cat && exposure.exposureType == INDIRECT))?.value
+          row.push(usd_direct)
+          row.push(usd_indirect)
+        } else {
+          usd_exposure = result.exposures?.find(exposure => (exposure.category))?.value
+          row.push(usd_exposure)
+        }
       }
 
       return row.join() // Turn it into a string
