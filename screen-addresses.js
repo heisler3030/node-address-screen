@@ -22,8 +22,8 @@ require('dotenv').config();
 // globals
 const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
-const rateLimit = 4000 // max number of API requests / minute
-const parallelism = 50 // number of simultaneous address screens in each batch
+const rateLimit = 3800 // max number of API requests / minute
+const parallelism = 45 // number of simultaneous address screens in each batch
 const DIRECT = 'direct' // API label for direct exposure
 const INDIRECT = 'indirect' // API label for indirect exposure
 const include_indirect = true // include indirect exposure  TODO:  make this a command line option
