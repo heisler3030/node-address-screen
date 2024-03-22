@@ -4,7 +4,7 @@
 //
 // Usage:  node screen-addresses.js [input-file] [output-file] -i
 //
-// -i:  Include indirect exposure in the output
+// -i:  Include indirect exposure in the output (for indirect-authorized API key only)
 // Set environment variable $API_KEY or use .env file
 // 
 // Input file format:  
@@ -26,7 +26,7 @@ const rateLimit = 3800 // max number of API requests / minute
 const parallelism = 45 // number of simultaneous address screens in each batch
 const DIRECT = 'direct' // API label for direct exposure
 const INDIRECT = 'indirect' // API label for indirect exposure
-const include_indirect = true // include indirect exposure  TODO:  make this a command line option
+let include_indirect = false // include indirect exposure
 
 const header_fields = [
   "address", 
@@ -38,8 +38,8 @@ const header_fields = [
   ]
 
 async function start(args) {
-  if (args.length != 4) {
-    console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n\n  -i:  Include indirect exposure in the output\n");
+  if (!(args.length == 4 | (args.length == 5 && args[4] == '-i'))) {
+    console.error("\nUsage:\n  node screen-addresses.js [input-file] [output-file]\n\n  -i:  Include indirect exposure in the output (for indirect-authorized API key only)\n");
     process.exit(1);
   }
 
@@ -50,6 +50,7 @@ async function start(args) {
 
   let input = args[2];
   let output = args[3];
+  if (args[4] == '-i') include_indirect = true;
   let startTime = Date.now()
 
   let categories = await fetchCategories()
@@ -123,7 +124,8 @@ async function processBatch(batch, output) {
           row.push(usd_direct)
           row.push(usd_indirect)
         } else {
-          usd_exposure = result.exposures?.find(exposure => (exposure.category))?.value
+          // Constructed to work with both direct and indirect API keys
+          let usd_exposure = result.exposures?.find(exposure => (exposure.category == cat && !(exposure.exposureType == INDIRECT)))?.value 
           row.push(usd_exposure)
         }
       }

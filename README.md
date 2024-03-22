@@ -3,7 +3,7 @@ A command-line utility for bulk screening cryptocurrency addresses using the [Ch
 
 Accepts a flat-file list of addresses and generates a CSV output file.
 
-Returns attribution and risk rating based on your configured risk rules.  Additional columns for total USD exposure in 31 entity categories.
+Returns attribution and risk rating based on your configured risk rules.  Additional columns for total USD exposure in 37 entity categories.
 
 # Usage
 ```
@@ -14,6 +14,11 @@ node screen-addresses.js [input-file] [output-file]
 node screen-addresses.js example-btc-addresses-250.csv example-output.csv
 ```
 
+For API keys enabled for indirect exposure, add `-i` flag to generate indirect exposure columns
+
+```
+node screen-addresses.js example-btc-addresses-250.csv example-output.csv -i
+```
 
 # Installation
 
