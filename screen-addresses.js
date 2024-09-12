@@ -1,4 +1,4 @@
-// address-info.js
+// screen-addresses.js
 //
 // Takes an input list of addresses and summarizes risky exposure
 //
@@ -16,17 +16,18 @@ const fs = require('fs');
 const { request } = require('https');
 require('util');
 require('path');
-const fetch = require('node-fetch');
 require('dotenv').config();
 
 // globals
 const host = "https://api.chainalysis.com"
 const headers = { 'token': process.env.API_KEY }
-const rateLimit = 3800 // max number of API requests / minute
-const parallelism = 45 // number of simultaneous address screens in each batch
 const DIRECT = 'direct' // API label for direct exposure
 const INDIRECT = 'indirect' // API label for indirect exposure
 let include_indirect = false // include indirect exposure
+
+const rateLimit = 14 // max number of API requests / sec
+const parallelism = 14 // number of simultaneous address screens in each batch
+
 
 const header_fields = [
   "address", 
@@ -80,7 +81,7 @@ async function start(args) {
     for(let batch of batches) {
       console.log(`Processing batch ${currentBatch} of ${batches.length}...`)
       batchTimes = setBatchTime(batchTimes, Date.now(), batchesPerMin) // Record start time for rate limiter
-      await processBatch(batch, output)
+      await processBatch(batch, categories, output)
       await checkRateLimit(batchTimes)
       currentBatch++
     }
@@ -100,7 +101,7 @@ function splitIntoBatches(arr, max) {
   );
 };
 
-async function processBatch(batch, output) {
+async function processBatch(batch, categories, output) {
   let promises = [];
 
   for(const record of batch) {
@@ -177,10 +178,11 @@ async function check_exposure(record) {
 async function fetchCategories() {
   console.log("Retrieving Chainalysis Categories...")
   try {
-    let get = await fetch("https://reactor.chainalysis.com/api/v2/categories", {headers: headers})
+    let get = await fetch(host + "/api/kyt/v2/categories", {headers: headers})
     if (!get.ok) throw new Error(get.status + ' ' + get.statusText)
     
-    categories = await get.json()
+    let res = await get.json()
+    let categories = res.categories.map(cat => cat.categoryName).filter(cat => cat.length > 0) 
     return categories.sort()
   }
   catch (e) {
@@ -193,13 +195,13 @@ async function checkRateLimit(batches) {
   // Checks to see if the previous batches are under the rate limit
   // Logic:  
   //   - Every time a batch is launched the start time is pushed into an array (setBatchTime)
-  //   - The array is sized equal to the max batches per minute
+  //   - The array is sized equal to the max batches per sec
   //   - The last entry in the array is the oldest batch
-  //   - If the oldest batch is newer than 1 min old then the sleep time is calculated
+  //   - If the oldest batch is newer than 1 sec old then the sleep time is calculated
   //     to prevent overage
   let timeSinceBatch = Date.now() - batches[batches.length-1] // time of the oldest batch
-  if (timeSinceBatch < 60000) {
-    let sleepTime = 61000 - timeSinceBatch
+  if (timeSinceBatch < 1000) {
+    let sleepTime = 1200 - timeSinceBatch
     console.log(`Sleeping for ${sleepTime} ms to manage rate limit`)
     await new Promise(r => setTimeout(r, sleepTime))
   }

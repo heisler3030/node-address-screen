@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Test Direct Screening",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/screen-addresses.js",
+            "args": ["example-input.csv", "example-output.csv"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Test Indirect Screening",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/screen-addresses.js",
+            "args": ["example-input.csv", "example-output.csv", "-i"]
+        }
+    ]
+}
