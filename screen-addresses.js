@@ -25,8 +25,8 @@ const DIRECT = 'direct' // API label for direct exposure
 const INDIRECT = 'indirect' // API label for indirect exposure
 let include_indirect = false // include indirect exposure
 
-const rateLimit = 14 // max number of API requests / sec
-const parallelism = 14 // number of simultaneous address screens in each batch
+const rateLimit = 30 // max number of API requests / sec, 2 requests per address
+const parallelism = 15 // number of simultaneous address screens in each batch
 
 
 const header_fields = [
@@ -201,7 +201,7 @@ async function checkRateLimit(batches) {
   //     to prevent overage
   let timeSinceBatch = Date.now() - batches[batches.length-1] // time of the oldest batch
   if (timeSinceBatch < 1000) {
-    let sleepTime = 1200 - timeSinceBatch
+    let sleepTime = 1100 - timeSinceBatch // add 100 ms buffer
     console.log(`Sleeping for ${sleepTime} ms to manage rate limit`)
     await new Promise(r => setTimeout(r, sleepTime))
   }
