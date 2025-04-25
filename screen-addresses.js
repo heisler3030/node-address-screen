@@ -25,8 +25,8 @@ const DIRECT = 'direct' // API label for direct exposure
 const INDIRECT = 'indirect' // API label for indirect exposure
 let include_indirect = false // include indirect exposure
 
-const rateLimit = 30 // max number of API requests / sec, 2 requests per address
-const parallelism = 15 // number of simultaneous address screens in each batch
+const rateLimit = 40 // max number of API requests / sec
+const parallelism = 30 // number of simultaneous address screens in each batch (must be <= rateLimit)
 
 
 const header_fields = [
@@ -74,8 +74,7 @@ async function start(args) {
     let currentBatch = 1
     
     // For rate limiting - see checkRateLimit function
-    let requestsPerBatch = (2 * parallelism) // two requests per address
-    let batchesPerMin = Math.floor(rateLimit/requestsPerBatch)
+    let batchesPerMin = Math.floor(rateLimit/parallelism)
     let batchTimes = new Array(batchesPerMin).fill(0) // Initialize rate limit array
 
     for(let batch of batches) {
@@ -149,10 +148,6 @@ async function check_exposure(record) {
   let address_info = {}
 
   try {
-    // Register address
-    let post = await fetch(host + "/api/risk/v2/entities", {method: "POST", headers: headers, body: body})
-    if (!post.ok) throw new Error(post.status + ' ' + post.statusText)
-
     // Retrieve info
     let get = await fetch(host + "/api/risk/v2/entities/" + address, {headers: headers})
     if (!get.ok) throw new Error(get.status + ' ' + get.statusText)
