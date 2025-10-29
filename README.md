@@ -1,5 +1,5 @@
 # Node-Address-Screen
-A command-line utility for bulk screening cryptocurrency addresses using the [Chainalysis Address Screening API](https://docs.chainalysis.com/api/address-screening/).
+A command-line utility for bulk screening cryptocurrency addresses using the [Chainalysis Address Screening API](https://developers.chainalysis.com/address-screening/docs/get-started/introduction).
 
 Accepts a flat-file list of addresses and generates a CSV output file.
 
